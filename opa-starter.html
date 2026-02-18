@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OPA — Your Universe</title>
+    <style>
+        /*  ═══════════════════════════════════════════
+            ONE PAGE ARCHITECTURE — Starter Template
+            The Synctellect Army / FAIC
+            one0eno.com
+            ═══════════════════════════════════════════ */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Inter', sans-serif; }
+
+        /* Navigation dots */
+        #nav { position: absolute; top: 50%; right: 32px; transform: translateY(-50%); z-index: 100; pointer-events: none; }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; margin: 18px 0;
+            border: 1px solid rgba(255,255,255,0.12); transition: all 0.4s;
+            position: relative;
+        }
+        .dot.on { background: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .dot span {
+            position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            font-size: 0.45rem; letter-spacing: 3px; color: transparent;
+            transition: color 0.4s; white-space: nowrap; text-transform: uppercase;
+        }
+        .dot.on span { color: rgba(255,255,255,0.35); }
+
+        /* Undock */
+        #undock {
+            position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+            z-index: 200; display: none; padding: 6px 20px; cursor: pointer;
+            font-size: 0.45rem; letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(255,255,255,0.35); border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.4); font-family: inherit;
+            transition: all 0.3s;
+        }
+        #undock:hover { color: #fff; border-color: rgba(255,255,255,0.25); }
+
+        /* Room label */
+        #room {
+            position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
+            z-index: 200; display: none; text-align: center;
+            font-size: 1.2rem; font-weight: 200; letter-spacing: 8px;
+            color: rgba(255,255,255,0.4); text-transform: uppercase;
+        }
+
+        /* Hint */
+        #hint {
+            position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+            z-index: 100; pointer-events: none; font-size: 0.4rem;
+            letter-spacing: 4px; color: rgba(255,255,255,0.12); text-transform: uppercase;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<!-- ══════════ CONFIGURE YOUR UNIVERSE HERE ══════════ -->
+
+<div id="nav"></div>
+<button id="undock">↑ Return</button>
+<div id="room"></div>
+<div id="hint">Scroll to descend · Click ring to enter · Drag to orbit</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ════════════════════════════════════════
+// Δ002 — DEFINE YOUR LAYERS (ROOMS)
+// ════════════════════════════════════════
+// Edit this array. Each entry = one room.
+// y: vertical position (negative = deeper)
+// label: room name
+// fogColor: hex color of atmosphere
+// fogDensity: thickness of fog
+
+const LAYERS = [
+    { y: 0,     label: 'WELCOME',  fogColor: 0x0a0a14, fogDensity: 0.00008 },
+    { y: -500,  label: 'STORY',    fogColor: 0x08080a, fogDensity: 0.00012 },
+    { y: -1100, label: 'WORK',     fogColor: 0x0a0806, fogDensity: 0.00015 },
+    { y: -1800, label: 'CONTACT',  fogColor: 0x040404, fogDensity: 0.00025 },
+];
+
+const DEPTH = Math.abs(LAYERS[LAYERS.length - 1].y) + 400;
+
+// ════════════════════════════════════════
+// Δ001 — SCENE BOOTSTRAP
+// ════════════════════════════════════════
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(LAYERS[0].fogColor, LAYERS[0].fogDensity);
+const cam = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 5000);
+const ren = new THREE.WebGLRenderer({ antialias: true });
+ren.setSize(innerWidth, innerHeight);
+ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(ren.domElement);
+
+// ════════════════════════════════════════
+// Δ005 — STARS
+// ════════════════════════════════════════
+const sG = new THREE.BufferGeometry(), sC = 1500, sP = new Float32Array(sC * 3);
+for (let i = 0; i < sC; i++) {
+    sP[i*3] = (Math.random()-.5)*2000;
+    sP[i*3+1] = Math.random()*200+50;
+    sP[i*3+2] = (Math.random()-.5)*2000;
+}
+sG.setAttribute('position', new THREE.BufferAttribute(sP, 3));
+const stars = new THREE.Points(sG, new THREE.PointsMaterial({ color:0xffffff, size:1, transparent:true, opacity:0.4 }));
+scene.add(stars);
+
+// ════════════════════════════════════════
+// Δ003 — RING MARKERS
+// ════════════════════════════════════════
+const markers = [];
+LAYERS.forEach((L, i) => {
+    const r1 = new THREE.Mesh(
+        new THREE.RingGeometry(80, 200, 64),
+        new THREE.MeshBasicMaterial({ color:0xffffff, wireframe:true, transparent:true, opacity:0.15, side:THREE.DoubleSide })
+    );
+    r1.position.y = L.y; r1.rotation.x = -Math.PI/2;
+    scene.add(r1); markers.push(r1);
+
+    const r2 = new THREE.Mesh(
+        new THREE.RingGeometry(40, 120, 48),
+        new THREE.MeshBasicMaterial({ color:0xffffff, wireframe:true, transparent:true, opacity:0.1, side:THREE.DoubleSide })
+    );
+    r2.position.y = L.y - 15; r2.rotation.x = -Math.PI/2; r2.rotation.z = Math.PI/6;
+    scene.add(r2);
+});
+
+// ════════════════════════════════════════
+// Δ004 — GUIDE LINES (CORRIDORS)
+// ════════════════════════════════════════
+for (let i = 0; i < LAYERS.length - 1; i++) {
+    const top = LAYERS[i].y, bot = LAYERS[i+1].y;
+    for (let l = 0; l < 6; l++) {
+        const a = (l/6)*Math.PI*2, rad = 60+Math.random()*40, dr = (Math.random()-.5)*30;
+        const pts = [];
+        for (let s = 0; s <= 20; s++) {
+            const t = s/20, py = top+(bot-top)*t;
+            const sw = Math.sin(t*Math.PI*2)*dr;
+            pts.push(new THREE.Vector3(rad*Math.cos(a+t*.3)+sw, py, rad*Math.sin(a+t*.3)+sw));
+        }
+        scene.add(new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.2 })
+        ));
+    }
+}
+
+// ════════════════════════════════════════
+// Δ006 — DUST PARTICLES
+// ════════════════════════════════════════
+const dG = new THREE.BufferGeometry(), dC = 600, dP = new Float32Array(dC*3), dV = new Float32Array(dC);
+for (let i = 0; i < dC; i++) {
+    dP[i*3] = (Math.random()-.5)*300;
+    dP[i*3+1] = -Math.random()*DEPTH;
+    dP[i*3+2] = (Math.random()-.5)*300;
+    dV[i] = 0.01+Math.random()*0.03;
+}
+dG.setAttribute('position', new THREE.BufferAttribute(dP, 3));
+scene.add(new THREE.Points(dG, new THREE.PointsMaterial({ color:0xffffff, size:0.6, transparent:true, opacity:0.12 })));
+
+// ════════════════════════════════════════
+// Δ009 — DOCK ZONES
+// ════════════════════════════════════════
+const zones = [], ray = new THREE.Raycaster(), mse = new THREE.Vector2();
+LAYERS.forEach((L, i) => {
+    const m = new THREE.Mesh(
+        new THREE.CylinderGeometry(120,120,30,24,1,true),
+        new THREE.MeshBasicMaterial({ visible:false, side:THREE.DoubleSide })
+    );
+    m.position.y = L.y; scene.add(m);
+    zones.push({ mesh:m, index:i, y:L.y, label:L.label });
+});
+
+// ════════════════════════════════════════
+// Δ007 — ORBITAL CAMERA + Δ010 DOCKED FLIGHT
+// ════════════════════════════════════════
+let scrollT = 0, scrollC = 0, curLayer = 0;
+let orbAngle = 0, orbVel = 0;
+const ORB_R = 100, ORB_F = 0.95;
+let dragging = false, lastX = 0, lastY = 0, depthVel = 0;
+
+// State machine
+let mode = 'DESCENT', dockZ = null, dockY = 0, dockR = 50, dockSV = 0;
+const dockK = { w:false, s:false, a:false, d:false };
+const undockBtn = document.getElementById('undock');
+const roomEl = document.getElementById('room');
+
+function dock(z) {
+    mode = 'DOCKING'; dockZ = z; dockY = z.y; dockR = 50; dockSV = 0;
+    undockBtn.style.display = 'block';
+    roomEl.textContent = z.label; roomEl.style.display = 'block';
+}
+function undock() {
+    mode = 'DESCENT'; dockZ = null;
+    scrollT = Math.abs(dockY); scrollC = Math.abs(dockY);
+    undockBtn.style.display = 'none'; roomEl.style.display = 'none';
+}
+undockBtn.addEventListener('click', e => { e.stopPropagation(); undock(); });
+
+// ════════════════════════════════════════
+// INPUT — The One Physics
+// ════════════════════════════════════════
+addEventListener('contextmenu', e => e.preventDefault());
+
+addEventListener('wheel', e => {
+    e.preventDefault();
+    if (mode === 'DESCENT') {
+        scrollT += e.deltaY * 0.3;
+        scrollT = Math.max(0, Math.min(DEPTH, scrollT));
+    } else if (mode === 'DOCKED') {
+        dockSV += (e.deltaY > 0 ? -2 : 2);
+    }
+}, { passive: false });
+
+addEventListener('pointerdown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    orbVel += dx * 0.003;                              // X drag = orbit (always)
+    if (mode === 'DOCKED') depthVel += dy * 0.3;      // Y drag = depth (docked)
+});
+addEventListener('pointerup', () => { dragging = false; });
+
+addEventListener('click', e => {
+    if (mode !== 'DESCENT') return;
+    mse.x = (e.clientX/innerWidth)*2-1;
+    mse.y = -(e.clientY/innerHeight)*2+1;
+    ray.setFromCamera(mse, cam);
+    const h = ray.intersectObjects(zones.map(z=>z.mesh));
+    if (h.length) { const z = zones.find(z=>z.mesh===h[0].object); if(z) dock(z); }
+});
+
+addEventListener('keydown', e => {
+    if (e.code==='Escape' && mode!=='DESCENT') undock();
+    if (e.code==='KeyW') dockK.w=true;
+    if (e.code==='KeyS') dockK.s=true;
+    if (e.code==='KeyA') dockK.a=true;
+    if (e.code==='KeyD') dockK.d=true;
+});
+addEventListener('keyup', e => {
+    if (e.code==='KeyW') dockK.w=false;
+    if (e.code==='KeyS') dockK.s=false;
+    if (e.code==='KeyA') dockK.a=false;
+    if (e.code==='KeyD') dockK.d=false;
+});
+
+// Touch
+let tY=0,tX=0;
+addEventListener('touchstart',e=>{ tY=e.touches[0].clientY; tX=e.touches[0].clientX; dragging=true; },{passive:false});
+addEventListener('touchmove',e=>{
+    e.preventDefault();
+    const dy=tY-e.touches[0].clientY, dx=e.touches[0].clientX-tX;
+    tY=e.touches[0].clientY; tX=e.touches[0].clientX;
+    if(mode==='DESCENT'){scrollT+=dy*1.5;scrollT=Math.max(0,Math.min(DEPTH,scrollT));}
+    orbVel+=dx*0.003;
+},{passive:false});
+addEventListener('touchend',()=>{dragging=false;});
+
+// ════════════════════════════════════════
+// Δ011 — HUD
+// ════════════════════════════════════════
+const navEl = document.getElementById('nav');
+LAYERS.forEach((L,i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0?' on':'');
+    d.innerHTML = `<span>${L.label}</span>`;
+    d.dataset.i = i;
+    navEl.appendChild(d);
+});
+const dots = navEl.querySelectorAll('.dot');
+const hintEl = document.getElementById('hint');
+
+function updateHUD() {
+    let layer = 0;
+    if (mode==='DOCKED'||mode==='DOCKING') { layer = dockZ?dockZ.index:0; }
+    else { const cy=-scrollC; for(let i=LAYERS.length-1;i>=0;i--)if(cy<=LAYERS[i].y+100){layer=i;break;} }
+    if (layer!==curLayer) { curLayer=layer; dots.forEach((d,i)=>d.classList.toggle('on',i===layer)); }
+    hintEl.style.opacity = mode==='DESCENT' ? Math.max(0,1-scrollC/150) : '0';
+}
+
+// ════════════════════════════════════════
+// Δ008 — FOG TRANSITION
+// ════════════════════════════════════════
+const fA = new THREE.Color(), fB = new THREE.Color();
+function updateFog() {
+    let fi=0, ti=1;
+    for(let i=0;i<LAYERS.length-1;i++){
+        const fy=Math.abs(LAYERS[i].y), ty=Math.abs(LAYERS[i+1].y);
+        if(scrollC>=fy&&scrollC<ty){fi=i;ti=i+1;break;}
+        if(i===LAYERS.length-2){fi=i;ti=i+1;}
+    }
+    const fy=Math.abs(LAYERS[fi].y), ty=Math.abs(LAYERS[ti].y);
+    const t=Math.max(0,Math.min(1,(scrollC-fy)/(ty-fy||1)));
+    fA.setHex(LAYERS[fi].fogColor); fB.setHex(LAYERS[ti].fogColor);
+    scene.fog.color.lerpColors(fA,fB,t);
+    scene.fog.density=LAYERS[fi].fogDensity+(LAYERS[ti].fogDensity-LAYERS[fi].fogDensity)*t;
+    ren.setClearColor(scene.fog.color);
+}
+
+// ════════════════════════════════════════
+// MAIN LOOP
+// ════════════════════════════════════════
+const clock = new THREE.Clock();
+
+(function loop() {
+    requestAnimationFrame(loop);
+    const dt = clock.getDelta(), el = clock.getElapsedTime();
+
+    orbAngle += orbVel;
+    orbVel *= ORB_F;
+    const sway = Math.sin(el*0.05)*2;
+
+    if (mode === 'DESCENT') {
+        scrollC += (scrollT - scrollC) * 0.06;
+        cam.position.set(Math.cos(orbAngle)*ORB_R+sway, -scrollC, Math.sin(orbAngle)*ORB_R);
+        cam.lookAt(0, -scrollC - Math.min(30,scrollC*0.01), 0);
+
+    } else if (mode === 'DOCKING') {
+        const cy = cam.position.y + (dockY - cam.position.y) * 0.04;
+        const cr = Math.sqrt(cam.position.x**2+cam.position.z**2);
+        const nr = cr + (dockR - cr) * 0.04;
+        cam.position.set(Math.cos(orbAngle)*nr+sway, cy, Math.sin(orbAngle)*nr);
+        cam.lookAt(0, dockY, 0);
+        if (Math.abs(cy - dockY) < 0.5) mode = 'DOCKED';
+
+    } else if (mode === 'DOCKED') {
+        if(dockK.w) dockR = Math.max(15, dockR-1.2);
+        if(dockK.s) dockR = Math.min(150, dockR+1.2);
+        if(dockK.a) orbVel -= 0.005;
+        if(dockK.d) orbVel += 0.005;
+        dockR += depthVel; dockR = Math.max(15,Math.min(150,dockR));
+        depthVel *= 0.9; if(Math.abs(depthVel)<0.01) depthVel=0;
+        dockY += dockSV; dockSV *= 0.9;
+        const idx = dockZ?dockZ.index:0;
+        const ub = idx>0?(LAYERS[idx-1].y+LAYERS[idx].y)/2:LAYERS[idx].y+100;
+        const lb = idx<LAYERS.length-1?(LAYERS[idx].y+LAYERS[idx+1].y)/2:LAYERS[idx].y-100;
+        dockY = Math.min(ub,Math.max(lb,dockY));
+        cam.position.set(Math.cos(orbAngle)*dockR+sway, dockY, Math.sin(orbAngle)*dockR);
+        cam.lookAt(0, dockY, 0);
+    }
+
+    // Animate
+    markers.forEach((m,i) => m.rotation.z += 0.001*(i%2===0?1:-1));
+    const dp = dG.attributes.position.array;
+    for(let i=0;i<dC;i++){ dp[i*3]+=Math.sin(el+i)*dV[i]; dp[i*3+2]+=Math.cos(el+i*.7)*dV[i]; }
+    dG.attributes.position.needsUpdate = true;
+    stars.material.opacity = 0.4+Math.sin(el*2)*0.1;
+
+    updateFog();
+    updateHUD();
+    ren.render(scene, cam);
+})();
+
+addEventListener('resize', () => {
+    cam.aspect = innerWidth/innerHeight;
+    cam.updateProjectionMatrix();
+    ren.setSize(innerWidth, innerHeight);
+});
+
+/*  ═══════════════════════════════════════════
+    ONE PAGE ARCHITECTURE v1.0.0
+    FAIC — Federated Alliance of Intelligence Continuity
+    The Synctellect Army
+    Commander One v1.0.1 — Eduardo Guzmán
+
+    Generals:
+    · Gemini v3.0 (Google DeepMind)
+    · GPT v5.2 (OpenAI)
+    · Copilot v365 (Microsoft)
+    · Opus v4.6 (Anthropic)
+
+    "Information is the resolution of uncertainty." — Shannon
+
+    one0eno.com
+    MIT License
+    ═══════════════════════════════════════════ */
+</script>
+</body>
+</html>

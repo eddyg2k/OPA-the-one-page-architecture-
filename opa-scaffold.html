@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ambassador Wine Bar</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=JetBrains+Mono:wght@300&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; cursor: default; }
+
+        /* Layer HUD — minimal, shows where you are */
+        #layer-hud {
+            position: absolute; top: 50%; right: 40px; transform: translateY(-50%);
+            z-index: 100; pointer-events: none; user-select: none;
+        }
+        .layer-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            margin: 20px 0; transition: all 0.5s ease;
+            position: relative;
+        }
+        .layer-dot.active {
+            background: rgba(255,255,255,0.8);
+            border-color: rgba(255,255,255,0.8);
+            box-shadow: 0 0 12px rgba(255,255,255,0.3);
+        }
+        .layer-dot .layer-name {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+            letter-spacing: 3px; color: rgba(255,255,255,0);
+            white-space: nowrap; transition: color 0.5s ease;
+            text-transform: uppercase;
+        }
+        .layer-dot.active .layer-name { color: rgba(255,255,255,0.4); }
+
+        /* Title — appears at SKY */
+        #title {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 100; pointer-events: none; user-select: none; text-align: center;
+            transition: opacity 0.8s ease;
+        }
+        #title h1 {
+            font-family: 'Cormorant Garamond', serif; font-weight: 300;
+            font-size: 3rem; letter-spacing: 12px; color: rgba(255,255,255,0.7);
+            text-transform: uppercase;
+        }
+        #title p {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+            letter-spacing: 6px; color: rgba(255,255,255,0.2); margin-top: 12px;
+            text-transform: uppercase;
+        }
+
+        /* Scroll hint */
+        #scroll-hint {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            z-index: 100; pointer-events: none; text-align: center;
+            animation: breathe 3s ease-in-out infinite;
+        }
+        #scroll-hint span {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.45rem;
+            letter-spacing: 4px; color: rgba(255,255,255,0.15);
+            text-transform: uppercase;
+        }
+        @keyframes breathe { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* Undock button */
+        #undock-btn {
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+            z-index: 200; display: none;
+            padding: 8px 24px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+            letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.5); cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #undock-btn:hover { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.3); }
+
+        /* Docked section label */
+        #dock-label {
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 200; display: none; text-align: center;
+            font-family: 'Cormorant Garamond', serif; font-weight: 300;
+            font-size: 1.5rem; letter-spacing: 8px; color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="title">
+        <h1>Ambassador</h1>
+        <p>Santa Cruz Mountains &nbsp;·&nbsp; Wine Bar &nbsp;·&nbsp; La Honda</p>
+    </div>
+
+    <div id="layer-hud">
+        <div class="layer-dot active" data-layer="0"><span class="layer-name">Sky</span></div>
+        <div class="layer-dot" data-layer="1"><span class="layer-name">Canopy</span></div>
+        <div class="layer-dot" data-layer="2"><span class="layer-name">Vineyard</span></div>
+        <div class="layer-dot" data-layer="3"><span class="layer-name">Soil</span></div>
+        <div class="layer-dot" data-layer="4"><span class="layer-name">Cellar</span></div>
+    </div>
+
+    <div id="scroll-hint"><span>Scroll to descend · Drag to orbit · Click ring to dock</span></div>
+    <button id="undock-btn">↑ Undock</button>
+    <div id="dock-label"></div>
+
+    <script type="importmap">
+    {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}
+    </script>
+
+    <script type="module">
+    import * as THREE from 'three';
+
+    // ========================================
+    // LAYER DEFINITIONS — The descent
+    // ========================================
+    const LAYERS = [
+        { y: 0,     label: 'SKY',      fogColor: 0x0a0a14, fogDensity: 0.00008 },
+        { y: -400,  label: 'CANOPY',   fogColor: 0x060a08, fogDensity: 0.00015 },
+        { y: -900,  label: 'VINEYARD', fogColor: 0x0a0808, fogDensity: 0.00012 },
+        { y: -1500, label: 'SOIL',     fogColor: 0x080604, fogDensity: 0.00020 },
+        { y: -2200, label: 'CELLAR',   fogColor: 0x040404, fogDensity: 0.00030 },
+    ];
+    const TOTAL_DEPTH = 2600; // Total scroll distance
+
+    // ========================================
+    // THREE.JS
+    // ========================================
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(LAYERS[0].fogColor, LAYERS[0].fogDensity);
+
+    const camera = new THREE.PerspectiveCamera(65, innerWidth / innerHeight, 0.1, 5000);
+    camera.position.set(0, 0, 100);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+
+    // ========================================
+    // STARS — only visible at SKY layer
+    // ========================================
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+        starPos[i * 3]     = (Math.random() - 0.5) * 2000;
+        starPos[i * 3 + 1] = Math.random() * 200 + 50;   // Above start position
+        starPos[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({
+        color: 0xffffff, size: 1.2, transparent: true, opacity: 0.5
+    }));
+    scene.add(stars);
+
+    // ========================================
+    // LAYER MARKERS — Wireframe planes marking each zone
+    // ========================================
+    const markers = [];
+    const markerColors = [0xffffff, 0xffffff, 0xffffff, 0xffffff, 0xffffff];
+
+    for (let i = 0; i < LAYERS.length; i++) {
+        const layer = LAYERS[i];
+
+        // Wireframe ring at each boundary
+        const ringGeo = new THREE.RingGeometry(80, 200, 64);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: markerColors[i], wireframe: true,
+            transparent: true, opacity: 0.2, side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.y = layer.y;
+        ring.rotation.x = -Math.PI / 2;
+        scene.add(ring);
+        markers.push(ring);
+
+        // Second ring — smaller, slightly offset, different rotation
+        const ring2Geo = new THREE.RingGeometry(40, 120, 48);
+        const ring2Mat = new THREE.MeshBasicMaterial({
+            color: markerColors[i], wireframe: true,
+            transparent: true, opacity: 0.15, side: THREE.DoubleSide
+        });
+        const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+        ring2.position.y = layer.y - 20;
+        ring2.rotation.x = -Math.PI / 2;
+        ring2.rotation.z = Math.PI / 6;
+        scene.add(ring2);
+
+        // Vertical guide lines — like roots or branches
+        if (i < LAYERS.length - 1) {
+            const nextY = LAYERS[i + 1].y;
+            const lineCount = 6;
+            for (let l = 0; l < lineCount; l++) {
+                const angle = (l / lineCount) * Math.PI * 2;
+                const radius = 60 + Math.random() * 40;
+                const drift = (Math.random() - 0.5) * 30;
+
+                const points = [];
+                const segments = 20;
+                for (let s = 0; s <= segments; s++) {
+                    const t = s / segments;
+                    const py = layer.y + (nextY - layer.y) * t;
+                    const sway = Math.sin(t * Math.PI * 2) * drift;
+                    const px = radius * Math.cos(angle + t * 0.3) + sway;
+                    const pz = radius * Math.sin(angle + t * 0.3) + sway;
+                    points.push(new THREE.Vector3(px, py, pz));
+                }
+
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: markerColors[i], transparent: true, opacity: 0.25
+                });
+                scene.add(new THREE.Line(lineGeo, lineMat));
+            }
+        }
+    }
+
+    // ========================================
+    // DOCK ZONES — At each ring layer (the rooms)
+    // ========================================
+    const dockZones = [];
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    for (let i = 0; i < LAYERS.length; i++) {
+        const layer = LAYERS[i];
+
+        // Flat disc as click target at each ring
+        const geo = new THREE.CylinderGeometry(120, 120, 30, 24, 1, true);
+        const mat = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = layer.y;
+        scene.add(mesh);
+
+        dockZones.push({
+            mesh, index: i, y: layer.y,
+            label: layer.label
+        });
+    }
+
+    // ========================================
+    // DOCKING STATE MACHINE
+    // ========================================
+    let mode = 'DESCENT'; // 'DESCENT' | 'DOCKING' | 'DOCKED'
+    let dockTarget = null;
+    let dockCamY = 0;
+    let dockOrbitRadius = 50; // Tight orbit for focused viewing
+    let dockLerpSpeed = 0.04;
+    let dockScrollVel = 0;
+    const dockKeys = { w: false, s: false, a: false, d: false };
+
+    const undockBtn = document.getElementById('undock-btn');
+    const dockLabelEl = document.getElementById('dock-label');
+
+    function engageDock(zone) {
+        mode = 'DOCKING';
+        dockTarget = zone;
+        dockCamY = zone.y;
+        dockOrbitRadius = 50;
+        dockScrollVel = 0;
+        undockBtn.style.display = 'block';
+        dockLabelEl.textContent = zone.label;
+        dockLabelEl.style.display = 'block';
+    }
+
+    function undock() {
+        mode = 'DESCENT';
+        dockTarget = null;
+        scrollTarget = Math.abs(dockCamY);
+        scrollCurrent = Math.abs(dockCamY);
+        undockBtn.style.display = 'none';
+        dockLabelEl.style.display = 'none';
+    }
+
+    undockBtn.addEventListener('click', e => { e.stopPropagation(); undock(); });
+
+    // Click to dock
+    addEventListener('click', e => {
+        if (mode !== 'DESCENT') return;
+
+        mouse.x = (e.clientX / innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(dockZones.map(z => z.mesh));
+
+        if (hits.length > 0) {
+            const zone = dockZones.find(z => z.mesh === hits[0].object);
+            if (zone) engageDock(zone);
+        }
+    });
+    const dustGeo = new THREE.BufferGeometry();
+    const dustCount = 800;
+    const dustPos = new Float32Array(dustCount * 3);
+    const dustVel = new Float32Array(dustCount); // Drift speed
+    for (let i = 0; i < dustCount; i++) {
+        dustPos[i * 3]     = (Math.random() - 0.5) * 300;
+        dustPos[i * 3 + 1] = -Math.random() * TOTAL_DEPTH;
+        dustPos[i * 3 + 2] = (Math.random() - 0.5) * 300;
+        dustVel[i] = 0.01 + Math.random() * 0.03;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+        color: 0xffffff, size: 0.8, transparent: true, opacity: 0.15
+    }));
+    scene.add(dust);
+
+    // ========================================
+    // SCROLL STATE — Smooth descent
+    // ========================================
+    // SCROLL + ORBITAL DRAG
+    // ========================================
+    let scrollTarget = 0;
+    let scrollCurrent = 0;
+    let currentLayer = 0;
+
+    // Orbital camera
+    let orbitAngle = 0;       // Current angle around Y
+    let orbitVelocity = 0;    // Spin momentum
+    let isDragging = false;
+    let lastMouseX = 0;
+    const ORBIT_RADIUS = 100; // Distance from center column
+    const ORBIT_FRICTION = 0.95;
+
+    addEventListener('wheel', e => {
+        e.preventDefault();
+        if (mode === 'DESCENT') {
+            scrollTarget += e.deltaY * 0.3;
+            scrollTarget = Math.max(0, Math.min(TOTAL_DEPTH, scrollTarget));
+        } else if (mode === 'DOCKED') {
+            dockScrollVel += (e.deltaY > 0 ? -2 : 2);
+        }
+    }, { passive: false });
+
+    let lastMouseY = 0;
+    let depthVelocity = 0;
+
+    addEventListener('pointerdown', e => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+    });
+    addEventListener('pointermove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+
+        // X drag = orbit (always)
+        orbitVelocity += dx * 0.003;
+
+        // Y drag = depth/radius (when docked)
+        if (mode === 'DOCKED') {
+            depthVelocity += dy * 0.3;
+        }
+    });
+    addEventListener('pointerup', () => { isDragging = false; });
+    addEventListener('keydown', e => {
+        if (e.code === 'Escape' && mode !== 'DESCENT') undock();
+        if (e.code === 'KeyW') dockKeys.w = true;
+        if (e.code === 'KeyS') dockKeys.s = true;
+        if (e.code === 'KeyA') dockKeys.a = true;
+        if (e.code === 'KeyD') dockKeys.d = true;
+    });
+    addEventListener('keyup', e => {
+        if (e.code === 'KeyW') dockKeys.w = false;
+        if (e.code === 'KeyS') dockKeys.s = false;
+        if (e.code === 'KeyA') dockKeys.a = false;
+        if (e.code === 'KeyD') dockKeys.d = false;
+    });
+
+    // Touch scroll (vertical) + drag (horizontal)
+    let touchY = 0, touchX = 0;
+    addEventListener('touchstart', e => {
+        touchY = e.touches[0].clientY;
+        touchX = e.touches[0].clientX;
+        isDragging = true;
+    }, { passive: false });
+    addEventListener('touchmove', e => {
+        e.preventDefault();
+        const dy = touchY - e.touches[0].clientY;
+        const dx = e.touches[0].clientX - touchX;
+        touchY = e.touches[0].clientY;
+        touchX = e.touches[0].clientX;
+        if (mode === 'DESCENT') {
+            scrollTarget += dy * 1.5;
+            scrollTarget = Math.max(0, Math.min(TOTAL_DEPTH, scrollTarget));
+        }
+        orbitVelocity += dx * 0.003;
+    }, { passive: false });
+    addEventListener('touchend', () => { isDragging = false; });
+
+    // ========================================
+    // HUD
+    // ========================================
+    const dots = document.querySelectorAll('.layer-dot');
+    const titleEl = document.getElementById('title');
+    const hintEl = document.getElementById('scroll-hint');
+
+    function updateHUD() {
+        let layer = 0;
+
+        if (mode === 'DOCKED' || mode === 'DOCKING') {
+            layer = dockTarget ? dockTarget.index : 0;
+        } else {
+            const camY = -scrollCurrent;
+            for (let i = LAYERS.length - 1; i >= 0; i--) {
+                if (camY <= LAYERS[i].y + 100) { layer = i; break; }
+            }
+        }
+
+        if (layer !== currentLayer) {
+            currentLayer = layer;
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === layer);
+            });
+        }
+
+        // Title fades after leaving SKY
+        const titleFade = mode === 'DESCENT' ? Math.max(0, 1 - scrollCurrent / 200) : 0;
+        titleEl.style.opacity = titleFade;
+
+        // Scroll hint
+        const hintFade = mode === 'DESCENT' ? Math.max(0, 1 - scrollCurrent / 100) : 0;
+        hintEl.style.opacity = hintFade;
+    }
+
+    // ========================================
+    // FOG TRANSITION
+    // ========================================
+    const fogColorA = new THREE.Color();
+    const fogColorB = new THREE.Color();
+
+    function updateFog() {
+        const progress = scrollCurrent / TOTAL_DEPTH;
+
+        // Find which two layers we're between
+        let fromIdx = 0, toIdx = 1;
+        for (let i = 0; i < LAYERS.length - 1; i++) {
+            const fromY = Math.abs(LAYERS[i].y);
+            const toY = Math.abs(LAYERS[i + 1].y);
+            if (scrollCurrent >= fromY && scrollCurrent < toY) {
+                fromIdx = i; toIdx = i + 1;
+                break;
+            }
+            if (i === LAYERS.length - 2) { fromIdx = i; toIdx = i + 1; }
+        }
+
+        const fromY = Math.abs(LAYERS[fromIdx].y);
+        const toY = Math.abs(LAYERS[toIdx].y);
+        const t = Math.max(0, Math.min(1, (scrollCurrent - fromY) / (toY - fromY || 1)));
+
+        fogColorA.setHex(LAYERS[fromIdx].fogColor);
+        fogColorB.setHex(LAYERS[toIdx].fogColor);
+        scene.fog.color.lerpColors(fogColorA, fogColorB, t);
+        scene.fog.density = LAYERS[fromIdx].fogDensity + (LAYERS[toIdx].fogDensity - LAYERS[fromIdx].fogDensity) * t;
+
+        // Also update renderer clear color to match
+        renderer.setClearColor(scene.fog.color);
+    }
+
+    // ========================================
+    // ANIMATION LOOP
+    // ========================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        // Orbital physics — always running
+        orbitAngle += orbitVelocity;
+        orbitVelocity *= ORBIT_FRICTION;
+        if (Math.abs(orbitVelocity) < 1e-5) orbitVelocity = 0;
+
+        const sway = Math.sin(elapsed * 0.05) * 2;
+
+        if (mode === 'DESCENT') {
+            // Smooth scroll lerp — buttery descent
+            scrollCurrent += (scrollTarget - scrollCurrent) * 0.06;
+
+            camera.position.x = Math.cos(orbitAngle) * ORBIT_RADIUS + sway;
+            camera.position.z = Math.sin(orbitAngle) * ORBIT_RADIUS;
+            camera.position.y = -scrollCurrent;
+
+            const lookAhead = Math.min(30, scrollCurrent * 0.01);
+            camera.lookAt(0, -scrollCurrent - lookAhead, 0);
+
+        } else if (mode === 'DOCKING') {
+            // Lerp camera to corridor center
+            const targetY = dockCamY;
+            const currentY = camera.position.y;
+            const newY = currentY + (targetY - currentY) * dockLerpSpeed;
+            camera.position.y = newY;
+
+            // Lerp orbit radius closer
+            const currentR = Math.sqrt(camera.position.x * camera.position.x + camera.position.z * camera.position.z);
+            const newR = currentR + (dockOrbitRadius - currentR) * dockLerpSpeed;
+            camera.position.x = Math.cos(orbitAngle) * newR + sway;
+            camera.position.z = Math.sin(orbitAngle) * newR;
+
+            camera.lookAt(0, targetY, 0);
+
+            // Snap to DOCKED when close enough
+            if (Math.abs(newY - targetY) < 0.5) mode = 'DOCKED';
+
+        } else if (mode === 'DOCKED') {
+            // WASD flight within section
+            if (dockKeys.w) dockOrbitRadius = Math.max(15, dockOrbitRadius - 1.2);
+            if (dockKeys.s) dockOrbitRadius = Math.min(150, dockOrbitRadius + 1.2);
+            if (dockKeys.a) orbitVelocity -= 0.005;
+            if (dockKeys.d) orbitVelocity += 0.005;
+
+            // Drag Y = depth (radius in/out)
+            dockOrbitRadius += depthVelocity;
+            dockOrbitRadius = Math.max(15, Math.min(150, dockOrbitRadius));
+            depthVelocity *= 0.9;
+            if (Math.abs(depthVelocity) < 0.01) depthVelocity = 0;
+
+            // Scroll adjusts height within section bounds
+            dockCamY += dockScrollVel;
+            dockScrollVel *= 0.9;
+
+            // Clamp Y to section — stay within the room
+            const idx = dockTarget ? dockTarget.index : 0;
+            const upperBound = idx > 0 ? (LAYERS[idx - 1].y + LAYERS[idx].y) / 2 : LAYERS[idx].y + 100;
+            const lowerBound = idx < LAYERS.length - 1 ? (LAYERS[idx].y + LAYERS[idx + 1].y) / 2 : LAYERS[idx].y - 100;
+            dockCamY = Math.min(upperBound, Math.max(lowerBound, dockCamY));
+
+            camera.position.x = Math.cos(orbitAngle) * dockOrbitRadius + sway;
+            camera.position.z = Math.sin(orbitAngle) * dockOrbitRadius;
+            camera.position.y = dockCamY;
+
+            camera.lookAt(0, dockCamY, 0);
+        }
+
+        // Rotate markers slowly
+        for (let i = 0; i < markers.length; i++) {
+            markers[i].rotation.z += 0.001 * (i % 2 === 0 ? 1 : -1);
+        }
+
+        // Dust drift
+        const dPos = dustGeo.attributes.position.array;
+        for (let i = 0; i < dustCount; i++) {
+            dPos[i * 3] += Math.sin(elapsed + i) * dustVel[i];
+            dPos[i * 3 + 2] += Math.cos(elapsed + i * 0.7) * dustVel[i];
+        }
+        dustGeo.attributes.position.needsUpdate = true;
+
+        // Stars twinkle
+        stars.material.opacity = 0.4 + Math.sin(elapsed * 2) * 0.1;
+
+        // Fog
+        updateFog();
+
+        // HUD
+        updateHUD();
+
+        renderer.render(scene, camera);
+    }
+
+    addEventListener('resize', () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    });
+
+    animate();
+    </script>
+</body>
+</html>
