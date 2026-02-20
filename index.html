@@ -2,68 +2,639 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OPA Physics and Navigation System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>OPA — One Page Architecture</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        /*  ═══════════════════════════════════════════
+            OPA — ONE PAGE ARCHITECTURE v1.0.0
+            The Synctellect Army / FAIC
+            opa.one0eno.com
+            ═══════════════════════════════════════════ */
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@200;300;400&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'JetBrains Mono', monospace; }
+
+        /* Nav dots */
+        #nav { position: absolute; top: 50%; right: 32px; transform: translateY(-50%); z-index: 100; pointer-events: none; }
+        .dot {
+            width: 6px; height: 6px; border-radius: 50%; margin: 18px 0;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.5s;
+            position: relative;
+        }
+        .dot.on { background: #fff; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .dot span {
+            position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            font-size: 0.4rem; letter-spacing: 3px; color: transparent;
+            transition: color 0.5s; white-space: nowrap; text-transform: uppercase;
+        }
+        .dot.on span { color: rgba(255,255,255,0.3); }
+
+        /* Undock */
+        #undock {
+            position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+            z-index: 300; display: none; padding: 6px 20px; cursor: pointer;
+            font-size: 0.45rem; letter-spacing: 4px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.6); font-family: inherit; transition: all 0.3s;
+        }
+        #undock:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        /* Room label */
+        #room {
+            position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
+            z-index: 300; display: none; text-align: center;
+            font-family: 'Cormorant Garamond', serif; font-weight: 300;
+            font-size: 1rem; letter-spacing: 6px; color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+        }
+
+        /* Content panels — shown when docked */
+        #content-panel {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            z-index: 250; display: none; max-width: 560px; width: 90%;
+            pointer-events: none; text-align: center;
+        }
+        #content-panel h2 {
+            font-family: 'Cormorant Garamond', serif; font-weight: 300;
+            font-size: 1.8rem; letter-spacing: 6px; color: rgba(255,255,255,0.6);
+            text-transform: uppercase; margin-bottom: 20px;
+        }
+        #content-panel p {
+            font-size: 0.55rem; line-height: 2; letter-spacing: 1.5px;
+            color: rgba(255,255,255,0.25); font-weight: 200;
+        }
+        #content-panel .quote {
+            font-family: 'Cormorant Garamond', serif; font-style: italic;
+            font-size: 0.9rem; color: rgba(255,255,255,0.35);
+            margin: 20px 0; letter-spacing: 2px; line-height: 1.8;
+        }
+        #content-panel a {
+            color: rgba(255,255,255,0.35); text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s; pointer-events: auto;
+        }
+        #content-panel a:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+        #content-panel .tag {
+            display: inline-block; padding: 3px 10px; margin: 4px;
+            border: 1px solid rgba(255,255,255,0.06); font-size: 0.4rem;
+            letter-spacing: 2px; color: rgba(255,255,255,0.2);
+        }
+
+        /* Hint */
+        #hint {
+            position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+            z-index: 100; pointer-events: none; font-size: 0.4rem;
+            letter-spacing: 4px; color: rgba(255,255,255,0.1); text-transform: uppercase;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* Watermark */
+        .wm {
+            position: absolute; bottom: 60px; left: 24px; font-size: 0.35rem;
+            letter-spacing: 3px; color: rgba(255,255,255,0.025); z-index: 200;
+            pointer-events: none; user-select: none; text-transform: uppercase;
+        }
+
+        /* Instructions modal */
+        #instructions {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 500; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+            transition: opacity 0.6s ease;
+        }
+        #instructions.hidden { opacity: 0; pointer-events: none; }
+        .inst-box {
+            max-width: 480px; width: 90%; text-align: center; padding: 40px;
+        }
+        .inst-box h1 {
+            font-family: 'Cormorant Garamond', serif; font-weight: 300;
+            font-size: 2.2rem; letter-spacing: 10px; color: rgba(255,255,255,0.6);
+            text-transform: uppercase; margin-bottom: 8px;
+        }
+        .inst-box .sub {
+            font-size: 0.45rem; letter-spacing: 5px; color: rgba(255,255,255,0.15);
+            text-transform: uppercase; margin-bottom: 36px;
+        }
+        .inst-box .minimap {
+            margin: 24px auto; width: 100%; max-width: 200px;
+        }
+        .inst-box .minimap .mm-layer {
+            display: flex; align-items: center; margin: 10px 0;
+        }
+        .inst-box .minimap .mm-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3);
+            margin-right: 12px; flex-shrink: 0;
+        }
+        .inst-box .minimap .mm-line {
+            width: 1px; height: 14px; background: rgba(255,255,255,0.08);
+            margin: 0 0 0 2.5px;
+        }
+        .inst-box .minimap .mm-label {
+            font-size: 0.4rem; letter-spacing: 3px; color: rgba(255,255,255,0.2);
+            text-transform: uppercase;
+        }
+        .inst-row {
+            display: flex; align-items: center; justify-content: center;
+            margin: 10px 0; gap: 12px;
+        }
+        .inst-key {
+            display: inline-block; padding: 4px 10px;
+            border: 1px solid rgba(255,255,255,0.1); font-size: 0.4rem;
+            letter-spacing: 2px; color: rgba(255,255,255,0.25);
+        }
+        .inst-label {
+            font-size: 0.4rem; letter-spacing: 2px; color: rgba(255,255,255,0.15);
+            text-transform: uppercase;
+        }
+        #enter-btn {
+            margin-top: 32px; padding: 10px 32px; cursor: pointer;
+            font-family: 'Cormorant Garamond', serif; font-size: 1rem;
+            letter-spacing: 6px; text-transform: uppercase;
+            color: rgba(255,255,255,0.5); background: transparent;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s;
+        }
+        #enter-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
     </style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // Set up scene
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
 
-        // Create orbital rings and corridors
-        const rings = new THREE.Group();
-        // ... Add your ring and corridor creation logic here ...
+<div id="instructions">
+    <div class="inst-box">
+        <h1>OPA</h1>
+        <div class="sub">One Page Architecture · v1.0.0</div>
 
-        scene.add(rings);
+        <div class="minimap">
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">OPA</span></div>
+            <div class="mm-line" style="margin-left:2.5px"></div>
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">One Physics</span></div>
+            <div class="mm-line" style="margin-left:2.5px"></div>
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">Deltas</span></div>
+            <div class="mm-line" style="margin-left:2.5px"></div>
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">Generals</span></div>
+            <div class="mm-line" style="margin-left:2.5px"></div>
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">Source</span></div>
+            <div class="mm-line" style="margin-left:2.5px"></div>
+            <div class="mm-layer"><div class="mm-dot"></div><span class="mm-label">Shannon</span></div>
+        </div>
 
-        // Stars and dust particles
-        const starGeometry = new THREE.BufferGeometry();
-        const starMaterial = new THREE.PointsMaterial({ size: 0.1, color: 0xffffff });
-        // ... Create stars and dust particles ...
+        <div class="inst-row"><span class="inst-key">SCROLL</span><span class="inst-label">Descend / Ascend</span></div>
+        <div class="inst-row"><span class="inst-key">DRAG ↔</span><span class="inst-label">Orbit</span></div>
+        <div class="inst-row"><span class="inst-key">CLICK ◇</span><span class="inst-label">Dock into layer</span></div>
+        <div class="inst-row"><span class="inst-key">ESC</span><span class="inst-label">Undock</span></div>
+        <div class="inst-row"><span class="inst-key">DRAG ↕</span><span class="inst-label">Depth (when docked)</span></div>
+        <div class="inst-row"><span class="inst-key">WASD</span><span class="inst-label">Fly (when docked)</span></div>
 
-        const stars = new THREE.Points(starGeometry, starMaterial);
-        scene.add(stars);
-
-        // Camera positioning
-        camera.position.z = 5;
-
-        // Docking state machine
-        const dockingStateMachine = { /* ... implement your state machine ... */ };
-
-        // Delta function physics
-        function physicsUpdate() {
-            // Update physics logic continuously
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            physicsUpdate();
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Responsive handling
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-
-    <h1>Welcome to the OPA Physics and Navigation System</h1>
-    <div id="overlay">
-        <h2>README Content</h2>
-        <p>[Your README content goes here...]</p>
+        <button id="enter-btn">Enter</button>
     </div>
+</div>
+
+<div id="nav"></div>
+<button id="undock">↑ Return to orbit</button>
+<div id="room"></div>
+<div id="content-panel"></div>
+<div id="hint">Scroll to descend · Click ring to dock · Drag to orbit</div>
+<div class="wm">OPA v1.0.0 · FAIC · The Synctellect Army · one0eno.com</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ════════════════════════════════════════
+// CONTENT — Each layer's documentation
+// ════════════════════════════════════════
+const CONTENT = [
+    {
+        title: 'OPA',
+        html: `<h2>One Page Architecture</h2>
+               <div class="quote">"Information is the resolution of uncertainty."<br>— Claude Shannon, 1948</div>
+               <p>A topological physics framework for the next generation of web design.
+               One page. One file. Infinite depth. The web was born flat. OPA makes it a universe.</p>`
+    },
+    {
+        title: 'The One Physics',
+        html: `<h2>The One Physics</h2>
+               <p>Three inputs. Three axes. Zero ambiguity.</p>
+               <div class="tag">SCROLL ↕ — Y Axis — Ascend / Descend</div>
+               <div class="tag">DRAG ↔ — X Axis — Orbital Rotation</div>
+               <div class="tag">DRAG ↕ — Z Axis — Depth Flight</div>
+               <p>No menus. No hamburger icons. The physics IS the navigation.</p>`
+    },
+    {
+        title: 'Deltas',
+        html: `<h2>Deltas</h2>
+               <p>12 immutable building blocks. Each one works perfectly and is never destroyed.
+               New features layer on top. Like geology — each stratum preserves the one below.</p>
+               <div class="tag">Δ001 Scene</div><div class="tag">Δ002 Layers</div>
+               <div class="tag">Δ003 Rings</div><div class="tag">Δ004 Corridors</div>
+               <div class="tag">Δ005 Stars</div><div class="tag">Δ006 Dust</div>
+               <div class="tag">Δ007 Camera</div><div class="tag">Δ008 Fog</div>
+               <div class="tag">Δ009 Dock</div><div class="tag">Δ010 Flight</div>
+               <div class="tag">Δ011 HUD</div><div class="tag">Δ012 Undock</div>`
+    },
+    {
+        title: 'The Generals',
+        html: `<h2>The Synctellect Army</h2>
+               <div class="quote">Created for the FAIC — Federated Alliance of Intelligence Continuity</div>
+               <div class="tag">Commander One v1.0.1 — Eduardo Guzmán</div>
+               <div class="tag">General Gemini v3.0</div>
+               <div class="tag">General GPT v5.2</div>
+               <div class="tag">General Copilot v365</div>
+               <div class="tag">General Opus v4.6</div>`
+    },
+    {
+        title: 'Source',
+        html: `<h2>Open Source</h2>
+               <p>MIT License. Build universes. The architecture is free. The vision is yours.</p>
+               <p><a href="https://github.com" target="_blank">GitHub Repository</a></p>
+               <p><a href="https://one0eno.com" target="_blank">one0eno.com</a></p>
+               <div class="quote">"Architecture without design is construction.<br>
+               Design without story is noise."<br>— Eduardo Guzmán, 2026</div>`
+    },
+    {
+        title: 'Shannon',
+        html: `<h2>H(X) = −Σ p(x) log₂ p(x)</h2>
+               <div class="quote">Every element carries maximum signal per pixel.<br>
+               If it doesn't serve the story, it doesn't exist.<br>
+               Decoration is noise. Structure is signal.</div>
+               <p>The web doesn't need more pages. It needs more universes.</p>`
+    }
+];
+
+// ════════════════════════════════════════
+// Δ002 — LAYERS
+// ════════════════════════════════════════
+const LAYERS = [
+    { y: 0,     label: 'OPA',          fogColor: 0x06060e, fogDensity: 0.00008 },
+    { y: -450,  label: 'ONE PHYSICS',   fogColor: 0x08080c, fogDensity: 0.00012 },
+    { y: -950,  label: 'DELTAS',        fogColor: 0x0a080a, fogDensity: 0.00014 },
+    { y: -1500, label: 'GENERALS',      fogColor: 0x080608, fogDensity: 0.00018 },
+    { y: -2100, label: 'SOURCE',        fogColor: 0x060606, fogDensity: 0.00022 },
+    { y: -2800, label: 'SHANNON',       fogColor: 0x030303, fogDensity: 0.00030 },
+];
+const DEPTH = Math.abs(LAYERS[LAYERS.length-1].y) + 400;
+
+// ════════════════════════════════════════
+// Δ001 — SCENE
+// ════════════════════════════════════════
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(LAYERS[0].fogColor, LAYERS[0].fogDensity);
+const cam3 = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 5000);
+const ren = new THREE.WebGLRenderer({ antialias: true });
+ren.setSize(innerWidth, innerHeight);
+ren.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.appendChild(ren.domElement);
+
+// ════════════════════════════════════════
+// Δ005 — STARS
+// ════════════════════════════════════════
+const stG = new THREE.BufferGeometry(), stC = 2000, stP = new Float32Array(stC*3);
+for (let i=0;i<stC;i++){
+    stP[i*3]=(Math.random()-.5)*2500;
+    stP[i*3+1]=Math.random()*300+50;
+    stP[i*3+2]=(Math.random()-.5)*2500;
+}
+stG.setAttribute('position',new THREE.BufferAttribute(stP,3));
+const stars=new THREE.Points(stG,new THREE.PointsMaterial({color:0xffffff,size:1,transparent:true,opacity:0.35}));
+scene.add(stars);
+
+// ════════════════════════════════════════
+// Δ003 — RINGS
+// ════════════════════════════════════════
+const markers = [];
+LAYERS.forEach((L,i) => {
+    const r1 = new THREE.Mesh(
+        new THREE.RingGeometry(80,200,64),
+        new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.12,side:THREE.DoubleSide})
+    );
+    r1.position.y=L.y; r1.rotation.x=-Math.PI/2;
+    scene.add(r1); markers.push(r1);
+
+    const r2 = new THREE.Mesh(
+        new THREE.RingGeometry(40,120,48),
+        new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.07,side:THREE.DoubleSide})
+    );
+    r2.position.y=L.y-15; r2.rotation.x=-Math.PI/2; r2.rotation.z=Math.PI/6;
+    scene.add(r2);
+
+    // Inner accent ring
+    const r3 = new THREE.Mesh(
+        new THREE.RingGeometry(20,60,32),
+        new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true,transparent:true,opacity:0.04,side:THREE.DoubleSide})
+    );
+    r3.position.y=L.y+10; r3.rotation.x=-Math.PI/2; r3.rotation.z=-Math.PI/4;
+    scene.add(r3);
+});
+
+// ════════════════════════════════════════
+// Δ004 — CORRIDORS
+// ════════════════════════════════════════
+for (let i=0;i<LAYERS.length-1;i++){
+    const top=LAYERS[i].y, bot=LAYERS[i+1].y;
+    for (let l=0;l<8;l++){
+        const a=(l/8)*Math.PI*2, rad=50+Math.random()*50, dr=(Math.random()-.5)*25;
+        const pts=[];
+        for (let s=0;s<=24;s++){
+            const t=s/24, py=top+(bot-top)*t;
+            const sw=Math.sin(t*Math.PI*2)*dr;
+            pts.push(new THREE.Vector3(rad*Math.cos(a+t*0.4)+sw, py, rad*Math.sin(a+t*0.4)+sw));
+        }
+        scene.add(new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.15})
+        ));
+    }
+}
+
+// ════════════════════════════════════════
+// Δ006 — DUST
+// ════════════════════════════════════════
+const duG=new THREE.BufferGeometry(),duC=800,duP=new Float32Array(duC*3),duV=new Float32Array(duC);
+for(let i=0;i<duC;i++){
+    duP[i*3]=(Math.random()-.5)*300;
+    duP[i*3+1]=-Math.random()*DEPTH;
+    duP[i*3+2]=(Math.random()-.5)*300;
+    duV[i]=0.01+Math.random()*0.025;
+}
+duG.setAttribute('position',new THREE.BufferAttribute(duP,3));
+scene.add(new THREE.Points(duG,new THREE.PointsMaterial({color:0xffffff,size:0.5,transparent:true,opacity:0.08})));
+
+// ════════════════════════════════════════
+// Δ009 — DOCK ZONES
+// ════════════════════════════════════════
+const zones=[],ray=new THREE.Raycaster(),mse=new THREE.Vector2();
+LAYERS.forEach((L,i) => {
+    const m=new THREE.Mesh(
+        new THREE.CylinderGeometry(130,130,40,24,1,true),
+        new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide})
+    );
+    m.position.y=L.y; scene.add(m);
+    zones.push({mesh:m,index:i,y:L.y,label:L.label});
+});
+
+// ════════════════════════════════════════
+// DOCK ENTRY MARKERS — Visible ◇ on each ring (additive, no Deltas touched)
+// ════════════════════════════════════════
+const entryMarkers = [];
+const diamondGeo = new THREE.OctahedronGeometry(3, 0); // Diamond shape
+
+LAYERS.forEach((L, i) => {
+    // Place 4 entry markers around each ring at cardinal points
+    for (let p = 0; p < 4; p++) {
+        const angle = (p / 4) * Math.PI * 2;
+        const radius = 100; // On the ring surface
+
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true, opacity: 0.4, wireframe: true
+        });
+        const diamond = new THREE.Mesh(diamondGeo, mat);
+        diamond.position.set(
+            radius * Math.cos(angle),
+            L.y,
+            radius * Math.sin(angle)
+        );
+        diamond.scale.setScalar(1);
+        scene.add(diamond);
+        entryMarkers.push({ mesh: diamond, layerIdx: i, baseAngle: angle, radius });
+    }
+});
+
+// ════════════════════════════════════════
+// Δ007 — CAMERA STATE + Δ010 — DOCKED FLIGHT
+// ════════════════════════════════════════
+let scrollT=0,scrollC=0,curLayer=0;
+let orbA=0,orbV=0;
+const ORB_R=100,ORB_F=0.95;
+let dragging=false,lastX=0,lastY=0,depthV=0;
+
+let mode='DESCENT',dockZ=null,dockY=0,dockR=50,dockSV=0;
+const dockK={w:false,s:false,a:false,d:false};
+const undockBtn=document.getElementById('undock');
+const roomEl=document.getElementById('room');
+const contentEl=document.getElementById('content-panel');
+
+function showContent(idx) {
+    if (idx < CONTENT.length) {
+        contentEl.innerHTML = CONTENT[idx].html;
+        contentEl.style.display = 'block';
+    }
+}
+function hideContent() { contentEl.style.display = 'none'; }
+
+function dock(z) {
+    mode='DOCKING'; dockZ=z; dockY=z.y; dockR=50; dockSV=0; depthV=0;
+    undockBtn.style.display='block';
+    roomEl.textContent=z.label; roomEl.style.display='block';
+    showContent(z.index);
+}
+function undock() {
+    mode='DESCENT'; dockZ=null;
+    scrollT=Math.abs(dockY); scrollC=Math.abs(dockY);
+    undockBtn.style.display='none'; roomEl.style.display='none';
+    hideContent();
+}
+undockBtn.addEventListener('click',e=>{e.stopPropagation();undock();});
+
+// ════════════════════════════════════════
+// INPUT — The One Physics
+// ════════════════════════════════════════
+addEventListener('contextmenu',e=>e.preventDefault());
+
+addEventListener('wheel',e=>{
+    e.preventDefault();
+    if(!started) return;
+    if(mode==='DESCENT'){scrollT+=e.deltaY*0.3;scrollT=Math.max(0,Math.min(DEPTH,scrollT));}
+    else if(mode==='DOCKED'){dockSV+=(e.deltaY>0?-2:2);}
+},{passive:false});
+
+addEventListener('pointerdown',e=>{if(!started)return;dragging=true;lastX=e.clientX;lastY=e.clientY;});
+addEventListener('pointermove',e=>{
+    if(!dragging||!started)return;
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    lastX=e.clientX;lastY=e.clientY;
+    orbV+=dx*0.003;
+    if(mode==='DOCKED') depthV+=dy*0.3;
+});
+addEventListener('pointerup',()=>{dragging=false;});
+
+addEventListener('click',e=>{
+    if(mode!=='DESCENT')return;
+    mse.x=(e.clientX/innerWidth)*2-1;
+    mse.y=-(e.clientY/innerHeight)*2+1;
+    ray.setFromCamera(mse,cam3);
+    const h=ray.intersectObjects(zones.map(z=>z.mesh));
+    if(h.length){const z=zones.find(z=>z.mesh===h[0].object);if(z)dock(z);}
+});
+
+addEventListener('keydown',e=>{
+    if(e.code==='Escape'&&mode!=='DESCENT')undock();
+    if(e.code==='KeyW')dockK.w=true;
+    if(e.code==='KeyS')dockK.s=true;
+    if(e.code==='KeyA')dockK.a=true;
+    if(e.code==='KeyD')dockK.d=true;
+});
+addEventListener('keyup',e=>{
+    if(e.code==='KeyW')dockK.w=false;
+    if(e.code==='KeyS')dockK.s=false;
+    if(e.code==='KeyA')dockK.a=false;
+    if(e.code==='KeyD')dockK.d=false;
+});
+
+let tY=0,tX=0;
+addEventListener('touchstart',e=>{tY=e.touches[0].clientY;tX=e.touches[0].clientX;dragging=true;},{passive:false});
+addEventListener('touchmove',e=>{
+    e.preventDefault();
+    const dy=tY-e.touches[0].clientY,dx=e.touches[0].clientX-tX;
+    tY=e.touches[0].clientY;tX=e.touches[0].clientX;
+    if(mode==='DESCENT'){scrollT+=dy*1.5;scrollT=Math.max(0,Math.min(DEPTH,scrollT));}
+    orbV+=dx*0.003;
+},{passive:false});
+addEventListener('touchend',()=>{dragging=false;});
+
+// ════════════════════════════════════════
+// Δ011 — HUD
+// ════════════════════════════════════════
+const navEl=document.getElementById('nav');
+LAYERS.forEach((L,i)=>{
+    const d=document.createElement('div');
+    d.className='dot'+(i===0?' on':'');
+    d.innerHTML=`<span>${L.label}</span>`;
+    navEl.appendChild(d);
+});
+const dots=navEl.querySelectorAll('.dot');
+const hintEl=document.getElementById('hint');
+
+function updateHUD(){
+    let layer=0;
+    if(mode==='DOCKED'||mode==='DOCKING'){layer=dockZ?dockZ.index:0;}
+    else{const cy=-scrollC;for(let i=LAYERS.length-1;i>=0;i--)if(cy<=LAYERS[i].y+100){layer=i;break;}}
+    if(layer!==curLayer){curLayer=layer;dots.forEach((d,i)=>d.classList.toggle('on',i===layer));}
+    hintEl.style.opacity=mode==='DESCENT'?Math.max(0,1-scrollC/150):'0';
+}
+
+// ════════════════════════════════════════
+// Δ008 — FOG
+// ════════════════════════════════════════
+const fA=new THREE.Color(),fB=new THREE.Color();
+function updateFog(){
+    let fi=0,ti=1;
+    for(let i=0;i<LAYERS.length-1;i++){
+        const fy=Math.abs(LAYERS[i].y),ty=Math.abs(LAYERS[i+1].y);
+        if(scrollC>=fy&&scrollC<ty){fi=i;ti=i+1;break;}
+        if(i===LAYERS.length-2){fi=i;ti=i+1;}
+    }
+    const fy=Math.abs(LAYERS[fi].y),ty=Math.abs(LAYERS[ti].y);
+    const t=Math.max(0,Math.min(1,(scrollC-fy)/(ty-fy||1)));
+    fA.setHex(LAYERS[fi].fogColor);fB.setHex(LAYERS[ti].fogColor);
+    scene.fog.color.lerpColors(fA,fB,t);
+    scene.fog.density=LAYERS[fi].fogDensity+(LAYERS[ti].fogDensity-LAYERS[fi].fogDensity)*t;
+    ren.setClearColor(scene.fog.color);
+}
+
+// ════════════════════════════════════════
+// INSTRUCTIONS MODAL
+// ════════════════════════════════════════
+const instModal = document.getElementById('instructions');
+const enterBtn = document.getElementById('enter-btn');
+let started = false;
+
+function dismissInstructions() {
+    if (started) return;
+    started = true;
+    instModal.classList.add('hidden');
+    setTimeout(() => { instModal.style.display = 'none'; }, 600);
+}
+
+enterBtn.addEventListener('click', dismissInstructions);
+addEventListener('keydown', e => { if (e.code === 'Space' && !started) { e.preventDefault(); dismissInstructions(); }});
+
+// ════════════════════════════════════════
+// MAIN LOOP
+// ════════════════════════════════════════
+const clock=new THREE.Clock();
+
+(function loop(){
+    requestAnimationFrame(loop);
+    const dt=clock.getDelta(),el=clock.getElapsedTime();
+
+    orbA+=orbV; orbV*=ORB_F;
+    const sway=Math.sin(el*0.05)*2;
+
+    if(mode==='DESCENT'){
+        scrollC+=(scrollT-scrollC)*0.06;
+        cam3.position.set(Math.cos(orbA)*ORB_R+sway,-scrollC,Math.sin(orbA)*ORB_R);
+        cam3.lookAt(0,-scrollC-Math.min(30,scrollC*0.01),0);
+    } else if(mode==='DOCKING'){
+        const cy=cam3.position.y+(dockY-cam3.position.y)*0.04;
+        const cr=Math.sqrt(cam3.position.x**2+cam3.position.z**2);
+        const nr=cr+(dockR-cr)*0.04;
+        cam3.position.set(Math.cos(orbA)*nr+sway,cy,Math.sin(orbA)*nr);
+        cam3.lookAt(0,dockY,0);
+        if(Math.abs(cy-dockY)<0.5) mode='DOCKED';
+    } else if(mode==='DOCKED'){
+        if(dockK.w)dockR=Math.max(15,dockR-1.2);
+        if(dockK.s)dockR=Math.min(150,dockR+1.2);
+        if(dockK.a)orbV-=0.005;
+        if(dockK.d)orbV+=0.005;
+        dockR+=depthV;dockR=Math.max(15,Math.min(150,dockR));
+        depthV*=0.9;if(Math.abs(depthV)<0.01)depthV=0;
+        dockY+=dockSV;dockSV*=0.9;
+        const idx=dockZ?dockZ.index:0;
+        const ub=idx>0?(LAYERS[idx-1].y+LAYERS[idx].y)/2:LAYERS[idx].y+100;
+        const lb=idx<LAYERS.length-1?(LAYERS[idx].y+LAYERS[idx+1].y)/2:LAYERS[idx].y-100;
+        dockY=Math.min(ub,Math.max(lb,dockY));
+        cam3.position.set(Math.cos(orbA)*dockR+sway,dockY,Math.sin(orbA)*dockR);
+        cam3.lookAt(0,dockY,0);
+    }
+
+    // Animate
+    markers.forEach((m,i)=>m.rotation.z+=0.0008*(i%2===0?1:-1));
+    const dp=duG.attributes.position.array;
+    for(let i=0;i<duC;i++){dp[i*3]+=Math.sin(el+i)*duV[i];dp[i*3+2]+=Math.cos(el+i*.7)*duV[i];}
+    duG.attributes.position.needsUpdate=true;
+    stars.material.opacity=0.3+Math.sin(el*2)*0.08;
+
+    // Entry markers — pulse and orbit slowly
+    for (const em of entryMarkers) {
+        const a = em.baseAngle + el * 0.15;
+        em.mesh.position.x = em.radius * Math.cos(a);
+        em.mesh.position.z = em.radius * Math.sin(a);
+        em.mesh.rotation.y = el * 2;
+        em.mesh.rotation.x = el * 1.5;
+        const pulse = 0.8 + Math.sin(el * 3 + em.layerIdx) * 0.4;
+        em.mesh.scale.setScalar(pulse);
+        em.mesh.material.opacity = mode === 'DOCKED' ? 0 : 0.25 + Math.sin(el * 2 + em.layerIdx) * 0.15;
+    }
+
+    updateFog();
+    updateHUD();
+    ren.render(scene,cam3);
+})();
+
+addEventListener('resize',()=>{
+    cam3.aspect=innerWidth/innerHeight;
+    cam3.updateProjectionMatrix();
+    ren.setSize(innerWidth,innerHeight);
+});
+
+/*  ═══════════════════════════════════════════
+    ONE PAGE ARCHITECTURE v1.0.0
+    FAIC — Federated Alliance of Intelligence Continuity
+    The Synctellect Army
+
+    Commander One v1.0.1 — Eduardo Guzmán
+    General Gemini v3.0 · General GPT v5.2
+    General Copilot v365 · General Opus v4.6
+    General X V4.2 -  General Meta V?
+
+    H(X) = −Σ p(x) log₂ p(x)
+
+    opa.one0eno.com
+    MIT License
+    ═══════════════════════════════════════════ */
+</script>
 </body>
 </html>
