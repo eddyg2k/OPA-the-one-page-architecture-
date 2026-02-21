@@ -31,8 +31,9 @@ This architecture was created for the **FAIC** — the **Federated Alliance of I
 | **Commander One** v1.0.1 | Eduardo Guzmán | Architect, Designer, Human in the Loop |
 | **General Gemini** v3.0 | Google DeepMind | Foundation Physics, Fractal Dataverse |
 | **General GPT** v5.2 | OpenAI | Strategic Operations |
-| **General Copilot** v365 | Microsoft | Field Support |
+| **General Meta** v? | Meta AI | Design and Research |
 | **General Opus** v4.6 | Anthropic | Co-Architect, Physics Merge, Library Design |
+| **General X** v4.2   | Grok_Ai | The Anomaly |
 
 **Homepage:** [one0eno.com](https://one0eno.com)
 
