@@ -20,7 +20,7 @@
             The Synctellect Army / FAIC
             opa.one0eno.com
             ═══════════════════════════════════════════ */
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@200;300;400&display=swap');
+         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@200;300;400&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background: #000; font-family: 'JetBrains Mono', monospace; }
 
@@ -37,14 +37,14 @@
             font-size: 0.4rem; letter-spacing: 3px; color: transparent;
             transition: color 0.5s; white-space: nowrap; text-transform: uppercase;
         }
-        .dot.on span { color: rgba(255,255,255,0.3); }
+        .dot.on span { color: rgba(255,255,255,0.6); }
 
         /* Undock */
         #undock {
             position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
             z-index: 300; display: none; padding: 6px 20px; cursor: pointer;
             font-size: 0.45rem; letter-spacing: 4px; text-transform: uppercase;
-            color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.15);
             background: rgba(0,0,0,0.6); font-family: inherit; transition: all 0.3s;
         }
         #undock:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
@@ -54,7 +54,7 @@
             position: absolute; top: 70px; left: 50%; transform: translateX(-50%);
             z-index: 300; display: none; text-align: center;
             font-family: 'Cormorant Garamond', serif; font-weight: 300;
-            font-size: 1rem; letter-spacing: 6px; color: rgba(255,255,255,0.3);
+            font-size: 1rem; letter-spacing: 6px; color: rgba(255,255,255,0.65);
             text-transform: uppercase;
         }
 
@@ -64,30 +64,43 @@
             z-index: 250; display: none; max-width: 560px; width: 90%;
             pointer-events: none; text-align: center;
         }
+        #content-panel.reveal > * {
+            opacity: 0; transform: translateY(12px);
+            animation: contentIn 0.6s ease forwards;
+        }
+        #content-panel.reveal > *:nth-child(1) { animation-delay: 0.1s; }
+        #content-panel.reveal > *:nth-child(2) { animation-delay: 0.3s; }
+        #content-panel.reveal > *:nth-child(3) { animation-delay: 0.5s; }
+        #content-panel.reveal > *:nth-child(4) { animation-delay: 0.7s; }
+        #content-panel.reveal > *:nth-child(5) { animation-delay: 0.9s; }
+        #content-panel.reveal > *:nth-child(6) { animation-delay: 1.1s; }
+        @keyframes contentIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
         #content-panel h2 {
             font-family: 'Cormorant Garamond', serif; font-weight: 300;
-            font-size: 1.8rem; letter-spacing: 6px; color: rgba(255,255,255,0.6);
+            font-size: 1.8rem; letter-spacing: 6px; color: rgba(255,255,255,0.9);
             text-transform: uppercase; margin-bottom: 20px;
         }
         #content-panel p {
             font-size: 0.55rem; line-height: 2; letter-spacing: 1.5px;
-            color: rgba(255,255,255,0.25); font-weight: 200;
+            color: rgba(255,255,255,0.65); font-weight: 200;
         }
         #content-panel .quote {
             font-family: 'Cormorant Garamond', serif; font-style: italic;
-            font-size: 0.9rem; color: rgba(255,255,255,0.35);
+            font-size: 0.9rem; color: rgba(255,255,255,0.7);
             margin: 20px 0; letter-spacing: 2px; line-height: 1.8;
         }
         #content-panel a {
-            color: rgba(255,255,255,0.35); text-decoration: none;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7); text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.25);
             transition: all 0.3s; pointer-events: auto;
         }
-        #content-panel a:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+        #content-panel a:hover { color: #fff; border-color: rgba(255,255,255,0.6); }
         #content-panel .tag {
             display: inline-block; padding: 3px 10px; margin: 4px;
-            border: 1px solid rgba(255,255,255,0.06); font-size: 0.4rem;
-            letter-spacing: 2px; color: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.15); font-size: 0.4rem;
+            letter-spacing: 2px; color: rgba(255,255,255,0.55);
         }
 
         /* Hint */
@@ -98,6 +111,14 @@
             animation: pulse 3s ease-in-out infinite;
         }
         @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+        /* Vignette — visual sound, deepens on descent */
+        #vignette {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 50; pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+            transition: opacity 0.5s;
+        }
 
         /* Watermark */
         .wm {
@@ -168,7 +189,7 @@
     </style>
 </head>
 <body>
-    
+
 <div id="instructions">
     <div class="inst-box">
         <h1>OPA</h1>
@@ -203,6 +224,7 @@
 <button id="undock">↑ Return to orbit</button>
 <div id="room"></div>
 <div id="content-panel"></div>
+<div id="vignette"></div>
 <div id="hint">Scroll to descend · Click ring to dock · Drag to orbit</div>
 <div class="wm">OPA v1.0.0 · FAIC · The Synctellect Army · one0eno.com</div>
 
@@ -413,6 +435,307 @@ LAYERS.forEach((L, i) => {
 });
 
 // ════════════════════════════════════════
+// LIFE 1 — CORRIDOR ENERGY PARTICLES
+// Light dots traveling along corridor paths
+// ════════════════════════════════════════
+const cEnergy = [];
+const cEnergyGeo = new THREE.SphereGeometry(0.4, 4, 4);
+for (let i = 0; i < LAYERS.length - 1; i++) {
+    const top = LAYERS[i].y, bot = LAYERS[i+1].y;
+    for (let c = 0; c < 6; c++) {
+        const angle = (c / 6) * Math.PI * 2;
+        const rad = 55 + Math.random() * 40;
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xffffff, transparent: true, opacity: 0
+        });
+        const dot = new THREE.Mesh(cEnergyGeo, mat);
+        scene.add(dot);
+        cEnergy.push({
+            mesh: dot, topY: top, botY: bot, angle, radius: rad,
+            speed: 0.15 + Math.random() * 0.2,
+            t: Math.random(), // position along corridor 0-1
+            drift: (Math.random() - 0.5) * 0.3
+        });
+    }
+}
+
+// ════════════════════════════════════════
+// LIFE 2 — RING LIGHT BLEED
+// Soft glow sprites at each ring center
+// ════════════════════════════════════════
+const glowTex = (function() {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,255,255,0.12)');
+    g.addColorStop(0.4, 'rgba(255,255,255,0.03)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+})();
+
+const ringGlows = [];
+LAYERS.forEach((L, i) => {
+    const mat = new THREE.SpriteMaterial({ map: glowTex, transparent: true, opacity: 0.5 });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.set(0, L.y, 0);
+    sprite.scale.set(200, 200, 1);
+    scene.add(sprite);
+    ringGlows.push({ sprite, baseY: L.y, idx: i });
+});
+
+// ════════════════════════════════════════
+// LIFE 3 — ATMOSPHERE PARTICLES
+// Dense, slow, reactive to camera proximity
+// ════════════════════════════════════════
+const atmCount = 400;
+const atmGeo = new THREE.BufferGeometry();
+const atmPos = new Float32Array(atmCount * 3);
+const atmSizes = new Float32Array(atmCount);
+const atmSpeeds = new Float32Array(atmCount);
+for (let i = 0; i < atmCount; i++) {
+    atmPos[i*3] = (Math.random() - 0.5) * 200;
+    atmPos[i*3+1] = -Math.random() * DEPTH;
+    atmPos[i*3+2] = (Math.random() - 0.5) * 200;
+    atmSizes[i] = 0.3 + Math.random() * 0.8;
+    atmSpeeds[i] = 0.003 + Math.random() * 0.008;
+}
+atmGeo.setAttribute('position', new THREE.BufferAttribute(atmPos, 3));
+const atmMat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.6, transparent: true, opacity: 0.04,
+    sizeAttenuation: true
+});
+const atmParticles = new THREE.Points(atmGeo, atmMat);
+scene.add(atmParticles);
+
+// ════════════════════════════════════════
+// VIGNETTE REFERENCE
+// ════════════════════════════════════════
+const vigEl = document.getElementById('vignette');
+
+// ════════════════════════════════════════
+// ENTRY GATE — Top of the architecture
+// Wireframe arch portal. One way in.
+// ════════════════════════════════════════
+const entryGate = new THREE.Group();
+// Two vertical pillars
+const pillarGeo = new THREE.BoxGeometry(3, 60, 3);
+const gateMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.25 });
+const pillarL = new THREE.Mesh(pillarGeo, gateMat);
+pillarL.position.set(-20, 30, 0);
+const pillarR = new THREE.Mesh(pillarGeo, gateMat);
+pillarR.position.set(20, 30, 0);
+// Arch top — torus arc
+const archGeo = new THREE.TorusGeometry(20, 1, 8, 16, Math.PI);
+const arch = new THREE.Mesh(archGeo, gateMat);
+arch.position.set(0, 60, 0);
+arch.rotation.z = 0;
+// Crossbar
+const crossGeo = new THREE.BoxGeometry(44, 1, 1);
+const cross = new THREE.Mesh(crossGeo, gateMat);
+cross.position.set(0, 2, 0);
+entryGate.add(pillarL, pillarR, arch, cross);
+entryGate.position.set(0, LAYERS[0].y + 120, 0);
+scene.add(entryGate);
+
+// ════════════════════════════════════════
+// EXIT GATE — Bottom of the architecture
+// Inverted pyramid. Ceremonial. One way out.
+// ════════════════════════════════════════
+const exitGate = new THREE.Group();
+const exitPyrGeo = new THREE.ConeGeometry(25, 40, 4, 1, true);
+const exitMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.2 });
+const exitPyr = new THREE.Mesh(exitPyrGeo, exitMat);
+exitPyr.rotation.x = Math.PI; // Inverted
+const exitRingGeo = new THREE.RingGeometry(18, 22, 4);
+const exitRing = new THREE.Mesh(exitRingGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.12, side: THREE.DoubleSide }));
+exitRing.rotation.x = -Math.PI / 2;
+exitRing.position.y = -25;
+exitGate.add(exitPyr, exitRing);
+exitGate.position.set(0, LAYERS[5].y - 120, 0);
+scene.add(exitGate);
+
+// ════════════════════════════════════════
+// ROOM CENTERPIECES — One per layer
+// ════════════════════════════════════════
+const roomStructures = [];
+const wfMat = (op) => new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: op });
+
+// Layer 0 — OPA: Rotating icosahedron (20 faces, shape of possibility)
+const icoGeo = new THREE.IcosahedronGeometry(12, 0);
+const ico = new THREE.Mesh(icoGeo, wfMat(0.2));
+ico.position.set(0, LAYERS[0].y, 0);
+scene.add(ico);
+roomStructures.push({ mesh: ico, type: 'ico' });
+
+// Layer 1 — One Physics: Gyroscope (3 interlocking rings on X,Y,Z)
+const gyroGroup = new THREE.Group();
+const gyroGeo = new THREE.TorusGeometry(10, 0.3, 8, 32);
+const gyroX = new THREE.Mesh(gyroGeo, wfMat(0.18));
+const gyroY = new THREE.Mesh(gyroGeo, wfMat(0.18));
+gyroY.rotation.x = Math.PI / 2;
+const gyroZ = new THREE.Mesh(gyroGeo, wfMat(0.18));
+gyroZ.rotation.z = Math.PI / 2;
+gyroGroup.add(gyroX, gyroY, gyroZ);
+gyroGroup.position.set(0, LAYERS[1].y, 0);
+scene.add(gyroGroup);
+roomStructures.push({ mesh: gyroGroup, type: 'gyro' });
+
+// Layer 2 — Deltas: 3x4 grid of small cubes (12 Deltas)
+const deltaGroup = new THREE.Group();
+const dcGeo = new THREE.BoxGeometry(3, 3, 3);
+for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+        const cube = new THREE.Mesh(dcGeo, wfMat(0.15));
+        cube.position.set((col - 1.5) * 7, (row - 1) * 7, 0);
+        cube.userData = { phase: row * 4 + col };
+        deltaGroup.add(cube);
+    }
+}
+deltaGroup.position.set(0, LAYERS[2].y, 0);
+scene.add(deltaGroup);
+roomStructures.push({ mesh: deltaGroup, type: 'deltas' });
+
+// Layer 3 — Generals: 5 pyramids in pentagon formation
+const genGroup = new THREE.Group();
+const pyrGeo = new THREE.ConeGeometry(4, 10, 4, 1, true);
+for (let g = 0; g < 5; g++) {
+    const a = (g / 5) * Math.PI * 2;
+    const pyr = new THREE.Mesh(pyrGeo, wfMat(0.2));
+    pyr.position.set(Math.cos(a) * 18, 0, Math.sin(a) * 18);
+    genGroup.add(pyr);
+}
+genGroup.position.set(0, LAYERS[3].y, 0);
+scene.add(genGroup);
+roomStructures.push({ mesh: genGroup, type: 'generals' });
+
+// Layer 4 — Source: Unfolding cube
+const srcGroup = new THREE.Group();
+const faceGeo = new THREE.PlaneGeometry(10, 10);
+const faceMat = wfMat(0.15);
+// 6 faces that unfold
+const faces = [];
+for (let f = 0; f < 6; f++) {
+    const face = new THREE.Mesh(faceGeo, faceMat.clone());
+    faces.push(face);
+    srcGroup.add(face);
+}
+// Position as a cube initially
+faces[0].position.set(0, 0, 5);                         // front
+faces[1].position.set(0, 0, -5); faces[1].rotation.y = Math.PI; // back
+faces[2].position.set(5, 0, 0); faces[2].rotation.y = Math.PI / 2; // right
+faces[3].position.set(-5, 0, 0); faces[3].rotation.y = -Math.PI / 2; // left
+faces[4].position.set(0, 5, 0); faces[4].rotation.x = -Math.PI / 2; // top
+faces[5].position.set(0, -5, 0); faces[5].rotation.x = Math.PI / 2; // bottom
+srcGroup.position.set(0, LAYERS[4].y, 0);
+scene.add(srcGroup);
+roomStructures.push({ mesh: srcGroup, type: 'source', faces });
+
+// Layer 5 — Shannon: Double helix (DNA spiral, information structure)
+const helixGroup = new THREE.Group();
+const helixPtMat = wfMat(0.25);
+const helixSphGeo = new THREE.SphereGeometry(0.8, 4, 4);
+const helixRungs = [];
+for (let h = 0; h < 40; h++) {
+    const t = h / 40;
+    const a = t * Math.PI * 6;
+    const y = (t - 0.5) * 50;
+    const r = 8;
+    // Strand A
+    const sA = new THREE.Mesh(helixSphGeo, helixPtMat.clone());
+    sA.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+    helixGroup.add(sA);
+    // Strand B (opposite)
+    const sB = new THREE.Mesh(helixSphGeo, helixPtMat.clone());
+    sB.position.set(Math.cos(a + Math.PI) * r, y, Math.sin(a + Math.PI) * r);
+    helixGroup.add(sB);
+    // Rung connecting them every 4th node
+    if (h % 4 === 0) {
+        const rungPts = [sA.position.clone(), sB.position.clone()];
+        const rung = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(rungPts),
+            new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12 })
+        );
+        helixGroup.add(rung);
+        helixRungs.push(rung);
+    }
+}
+helixGroup.position.set(0, LAYERS[5].y, 0);
+scene.add(helixGroup);
+roomStructures.push({ mesh: helixGroup, type: 'helix' });
+
+// ════════════════════════════════════════
+// TATAMI T-JUNCTION — Floating in Shannon's room
+// The outside tile forces the nucleus to reaccomodate
+// ════════════════════════════════════════
+const tatamiGroup = new THREE.Group();
+const tMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 });
+
+// Outer tile — horizontal rectangle (the outside force)
+function wireRect(w, h, mat) {
+    const pts = [
+        new THREE.Vector3(-w/2, 0, -h/2), new THREE.Vector3(w/2, 0, -h/2),
+        new THREE.Vector3(w/2, 0, h/2), new THREE.Vector3(-w/2, 0, h/2),
+        new THREE.Vector3(-w/2, 0, -h/2)
+    ];
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat);
+}
+
+// The T-junction: 3 tiles meeting
+// Tile A — horizontal, top (2:1 ratio tatami)
+const tileA = wireRect(16, 8, tMat);
+tileA.position.set(0, 0, -6);
+// Tile B — horizontal, bottom-left
+const tileB = wireRect(8, 8, tMat.clone());
+tileB.position.set(-4, 0, 4);
+// Tile C — the nucleus tile, forced to rotate/shift by the T-junction
+const tileCMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+const tileC = wireRect(8, 8, tileCMat);
+tileC.position.set(4, 0, 4);
+// T-junction line — the pressure edge where tiles meet
+const tLinePts = [new THREE.Vector3(0, 0.1, -2), new THREE.Vector3(0, 0.1, 10)];
+const tLine = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(tLinePts),
+    new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+);
+// Pressure indicator — small node at the T-point
+const tNode = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.8, 0),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.7 })
+);
+tNode.position.set(0, 0.2, -2);
+
+tatamiGroup.add(tileA, tileB, tileC, tLine, tNode);
+tatamiGroup.position.set(0, LAYERS[5].y, 0);
+tatamiGroup.scale.setScalar(1.5);
+scene.add(tatamiGroup);
+
+// Store reference for animation
+const tatamiRef = { group: tatamiGroup, tileC, tNode, tileCMat };
+
+// ════════════════════════════════════════
+// VOID SERPENT — Guardian of the corridors
+// Chain of spheres on a spline path
+// ════════════════════════════════════════
+const serpentSegments = 60;
+const serpentGroup = new THREE.Group();
+const serpSphGeo = new THREE.SphereGeometry(0.6, 4, 4);
+const serpParts = [];
+for (let s = 0; s < serpentSegments; s++) {
+    const size = s === 0 ? 1.2 : Math.max(0.3, 1 - s / serpentSegments);
+    const sph = new THREE.Mesh(
+        serpSphGeo,
+        new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.2 })
+    );
+    sph.scale.setScalar(size);
+    serpentGroup.add(sph);
+    serpParts.push(sph);
+}
+scene.add(serpentGroup);
+// Serpent path parameters
+const serpState = { phase: 0 };
+
+// ════════════════════════════════════════
 // Δ007 — CAMERA STATE + Δ010 — DOCKED FLIGHT
 // ════════════════════════════════════════
 let scrollT=0,scrollC=0,curLayer=0;
@@ -429,10 +752,17 @@ const contentEl=document.getElementById('content-panel');
 function showContent(idx) {
     if (idx < CONTENT.length) {
         contentEl.innerHTML = CONTENT[idx].html;
+        contentEl.classList.remove('reveal');
         contentEl.style.display = 'block';
+        // Force reflow then trigger staggered animation
+        void contentEl.offsetWidth;
+        contentEl.classList.add('reveal');
     }
 }
-function hideContent() { contentEl.style.display = 'none'; }
+function hideContent() {
+    contentEl.classList.remove('reveal');
+    contentEl.style.display = 'none';
+}
 
 function dock(z) {
     mode='DOCKING'; dockZ=z; dockY=z.y; dockR=50; dockSV=0; depthV=0;
@@ -619,6 +949,125 @@ const clock=new THREE.Clock();
         em.mesh.material.opacity = mode === 'DOCKED' ? 0 : 0.25 + Math.sin(el * 2 + em.layerIdx) * 0.15;
     }
 
+    // ── LIFE: Ring breathing ──
+    markers.forEach((m, i) => {
+        const breath = 0.08 + Math.sin(el * 0.6 + i * 1.2) * 0.04;
+        m.material.opacity = breath;
+    });
+
+    // ── LIFE: Corridor energy particles ──
+    const camY = cam3.position.y;
+    for (const ce of cEnergy) {
+        ce.t += ce.speed * dt;
+        if (ce.t > 1) ce.t -= 1;
+        const py = ce.topY + (ce.botY - ce.topY) * ce.t;
+        const a = ce.angle + ce.t * 0.5 + ce.drift * Math.sin(el);
+        ce.mesh.position.set(ce.radius * Math.cos(a), py, ce.radius * Math.sin(a));
+        // Fade based on camera distance
+        const dist = Math.abs(camY - py);
+        ce.mesh.material.opacity = dist < 200 ? 0.3 * (1 - dist / 200) : 0;
+    }
+
+    // ── LIFE: Ring light bleed — proximity glow ──
+    for (const rg of ringGlows) {
+        const dist = Math.abs(camY - rg.baseY);
+        const prox = Math.max(0, 1 - dist / 350);
+        const breathGlow = 0.3 + Math.sin(el * 0.4 + rg.idx * 0.8) * 0.15;
+        rg.sprite.material.opacity = prox * breathGlow;
+        rg.sprite.scale.setScalar(150 + prox * 80);
+    }
+
+    // ── LIFE: Atmosphere particles — drift and proximity reaction ──
+    const ap = atmGeo.attributes.position.array;
+    for (let i = 0; i < atmCount; i++) {
+        ap[i*3] += Math.sin(el * 0.3 + i * 0.7) * atmSpeeds[i];
+        ap[i*3+1] += Math.cos(el * 0.2 + i * 0.5) * atmSpeeds[i] * 0.5;
+        ap[i*3+2] += Math.cos(el * 0.4 + i * 0.3) * atmSpeeds[i];
+    }
+    atmGeo.attributes.position.needsUpdate = true;
+    // Atmosphere brighter near camera
+    const depthRatio = Math.min(1, Math.abs(camY) / DEPTH);
+    atmMat.opacity = 0.03 + depthRatio * 0.04;
+
+    // ── LIFE: Vignette — deepens with descent ──
+    const vigStrength = 0.5 + depthRatio * 0.4;
+    vigEl.style.background = `radial-gradient(ellipse at center, transparent ${40 - depthRatio * 15}%, rgba(0,0,0,${vigStrength}) 100%)`;
+
+    // ── STRUCTURES: Room centerpieces ──
+    for (const rs of roomStructures) {
+        if (rs.type === 'ico') {
+            rs.mesh.rotation.y = el * 0.3;
+            rs.mesh.rotation.x = el * 0.15;
+        } else if (rs.type === 'gyro') {
+            rs.mesh.children[0].rotation.z = el * 0.4;
+            rs.mesh.children[1].rotation.x = Math.PI / 2 + el * 0.3;
+            rs.mesh.children[2].rotation.z = Math.PI / 2 + el * 0.5;
+        } else if (rs.type === 'deltas') {
+            rs.mesh.rotation.y = el * 0.1;
+            rs.mesh.children.forEach((c, ci) => {
+                const p = 0.8 + Math.sin(el * 2 + ci * 0.5) * 0.3;
+                c.scale.setScalar(p);
+                c.material.opacity = 0.1 + Math.sin(el * 1.5 + ci) * 0.08;
+            });
+        } else if (rs.type === 'generals') {
+            rs.mesh.rotation.y = el * 0.2;
+            rs.mesh.children.forEach((c, ci) => {
+                c.rotation.y = el * 0.5 + ci;
+            });
+        } else if (rs.type === 'source') {
+            rs.mesh.rotation.y = el * 0.1;
+            const unfold = Math.sin(el * 0.2) * 0.3 + 0.3;
+            rs.faces[0].position.z = 5 + unfold * 8;
+            rs.faces[1].position.z = -5 - unfold * 8;
+            rs.faces[2].position.x = 5 + unfold * 8;
+            rs.faces[3].position.x = -5 - unfold * 8;
+            rs.faces[4].position.y = 5 + unfold * 8;
+            rs.faces[5].position.y = -5 - unfold * 8;
+        } else if (rs.type === 'helix') {
+            rs.mesh.rotation.y = el * 0.25;
+        }
+    }
+
+    // ── STRUCTURES: Entry gate — slow majestic rotation ──
+    entryGate.rotation.y = el * 0.05;
+
+    // ── STRUCTURES: Exit gate — inverted rotation ──
+    exitGate.rotation.y = -el * 0.08;
+    exitGate.children[0].rotation.y = el * 0.3;
+
+    // ── TATAMI T-JUNCTION — the nucleus reaccomodates ──
+    tatamiRef.group.rotation.y = el * 0.15;
+    // Float up and down gently
+    tatamiRef.group.position.y = LAYERS[5].y + Math.sin(el * 0.4) * 5;
+    // The nucleus tile (C) oscillates — the pressure makes it shift
+    const tPressure = Math.sin(el * 0.8);
+    tatamiRef.tileC.position.x = 4 + tPressure * 1.5;
+    tatamiRef.tileC.rotation.y = tPressure * 0.15;
+    // T-node pulses at the junction point
+    const tPulse = 0.8 + Math.sin(el * 3) * 0.5;
+    tatamiRef.tNode.scale.setScalar(tPulse);
+    tatamiRef.tNode.material.opacity = 0.4 + Math.sin(el * 2) * 0.3;
+    tatamiRef.tileCMat.opacity = 0.4 + Math.abs(tPressure) * 0.3;
+
+    // ── VOID SERPENT — guardian threading through corridors ──
+    serpState.phase += dt * 0.15;
+    const sp = serpState.phase;
+    for (let s = 0; s < serpentSegments; s++) {
+        const t = (sp + s * 0.04) % 1;
+        const totalDepth = Math.abs(LAYERS[5].y);
+        const sy = -t * totalDepth;
+        const sRad = 60 + Math.sin(t * Math.PI * 8 + sp * 2) * 25;
+        const sAngle = t * Math.PI * 6 + sp;
+        serpParts[s].position.set(
+            Math.cos(sAngle) * sRad,
+            sy,
+            Math.sin(sAngle) * sRad
+        );
+        // Fade based on distance to camera
+        const sDist = Math.abs(camY - sy);
+        serpParts[s].material.opacity = sDist < 300 ? 0.2 * (1 - sDist / 300) : 0;
+    }
+
     updateFog();
     updateHUD();
     ren.render(scene,cam3);
@@ -638,7 +1087,8 @@ addEventListener('resize',()=>{
     Commander One v1.0.1 — Eduardo Guzmán
     General Gemini v3.0 · General GPT v5.2
     General Copilot v365 · General Opus v4.6
-    General X V4.2 -  General Meta V?
+    General X420 (Grok)  · General Notion
+    General Meta V?      · General Frontier
 
     H(X) = −Σ p(x) log₂ p(x)
 
@@ -648,3 +1098,4 @@ addEventListener('resize',()=>{
 </script>
 </body>
 </html>
+
